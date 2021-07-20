@@ -59,9 +59,32 @@ def InducedChargeSquarePadExact(Q,x,y,z,padSize=3.):
             return Q
         else:
             return 0.
-        
-        
-        
+     
+######################################################################################\
+# Define a function to compute the charge observed by a square pad, centered at (0,0,0) 
+def InducedChargeSquarePadExactVectorized(Q,x,y,z,padSize=3.):
+    
+    padDiagonalSize = padSize # mm
+    padEdgeSize = padDiagonalSize/np.sqrt(2.)
+    
+    induced_charge = Q /(2.*np.pi) * ( \
+                        ImageChargeDefiniteIntegral(-padEdgeSize/2.-x,-padEdgeSize/2.-y,z)\
+                        - ImageChargeDefiniteIntegral(padEdgeSize/2.-x,-padEdgeSize/2.-y,z)\
+                        - ImageChargeDefiniteIntegral(-padEdgeSize/2.-x,padEdgeSize/2.-y,z)\
+                        + ImageChargeDefiniteIntegral(padEdgeSize/2.-x,padEdgeSize/2.-y,z))
+    
+    zmask = z > 0.
+    return_array = np.zeros(len(induced_charge))
+    return_array[zmask] = induced_charge[zmask]
+
+    on_strip_mask = (x>-padEdgeSize/2.)&(x<padEdgeSize/2.)&(y>-padEdgeSize/2.)&(y<padEdgeSize/2.)
+
+    return_array[np.invert(zmask)&on_strip_mask] = np.ones( len(return_array[np.invert(zmask)&on_strip_mask]) ) * \
+                                                           Q[np.invert(zmask)&on_strip_mask]
+    return_array[np.invert(zmask)&np.invert(on_strip_mask)] = np.zeros (len(return_array[np.invert(zmask)&np.invert(on_strip_mask)]) ) 
+    
+    return return_array
+
         
 ######################################################################################\
 def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16):
@@ -85,7 +108,34 @@ def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16):
                                                      padSize)
         
     return totalInducedCharge
+
+
         
+######################################################################################\
+def InducedChargeNEXOStripVectorized(Q,x,y,z,padSize=6.,numPads=16):
+    # Strip is modeled as a strip along the X axis, with half the strip above 0 and 
+    # half below
+    totalInducedCharge = 0.
+    stripLength = padSize * numPads
+    
+    for i in range(numPads):
+        xpad = -stripLength/2. + padSize/2. + padSize * i
+        
+        #print(xpad)
+        
+        relativeX = (x-xpad)/np.sqrt(2.) + y/np.sqrt(2.)
+        relativeY = -(x-xpad)/np.sqrt(2.) + y/np.sqrt(2.)
+        
+        #print('{}\t{:4.4},{:4.4}'.format(xpad,relativeX,relativeY))
+        
+        
+        totalInducedCharge += InducedChargeSquarePadExactVectorized(Q,relativeX,relativeY,z,\
+                                                     padSize)
+        
+    return totalInducedCharge
+        
+
+
 ######################################################################################\    
 def ComputeChargeWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300):
     
