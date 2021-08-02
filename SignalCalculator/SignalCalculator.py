@@ -115,7 +115,7 @@ def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16):
 def InducedChargeNEXOStripVectorized(Q,x,y,z,padSize=6.,numPads=16):
     # Strip is modeled as a strip along the X axis, with half the strip above 0 and 
     # half below
-    totalInducedCharge = 0.
+    totalInducedCharge = np.zeros(len(x))
     stripLength = padSize * numPads
     
     for i in range(numPads):
