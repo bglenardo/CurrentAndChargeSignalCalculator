@@ -11,12 +11,23 @@ def ImageChargeDefiniteIntegral(x,y,z):
     return np.arctan(x*y / (z * np.sqrt(x**2 + y**2 + z**2)))
 
 
+########################################################################################
+#Argument description
+#padSize is really the pad pitch, and padGap represents the normal distance between two
+#pads that is not coated in conducting material, i.e. captures charge on dielectric. default None
+#but should be passed in units of mm (same as padSize)
+
+
 ######################################################################################\
 # Define a function to compute the charge observed by a square pad, centered at (0,0,0) 
-def InducedChargeSquarePadNumerical(Q,x,y,z,padSize=3.,numPoints=300):
+def InducedChargeSquarePadNumerical(Q,x,y,z,padSize=3.,numPoints=300,padGap=None):
     
     padDiagonalSize = padSize # mm
+    if(padGap != None):
+        padDiagonalSize = padDiagonalSize - np.sqrt(2)*padGap
     padEdgeSize = padDiagonalSize/np.sqrt(2.)
+    
+
     
     
     xarray = np.linspace(-padEdgeSize/2.,padEdgeSize/2.,numPoints)
@@ -40,9 +51,11 @@ def InducedChargeSquarePadNumerical(Q,x,y,z,padSize=3.,numPoints=300):
         
 ######################################################################################\
 # Define a function to compute the charge observed by a square pad, centered at (0,0,0) 
-def InducedChargeSquarePadExact(Q,x,y,z,padSize=3.):
+def InducedChargeSquarePadExact(Q,x,y,z,padSize=3.,padGap=None):
     
     padDiagonalSize = padSize # mm
+    if(padGap != None):
+        padDiagonalSize = padDiagonalSize - np.sqrt(2)*padGap
     padEdgeSize = padDiagonalSize/np.sqrt(2.)
     
     induced_charge = Q /(2.*np.pi) * ( \
@@ -62,9 +75,11 @@ def InducedChargeSquarePadExact(Q,x,y,z,padSize=3.):
      
 ######################################################################################\
 # Define a function to compute the charge observed by a square pad, centered at (0,0,0) 
-def InducedChargeSquarePadExactVectorized(Q,x,y,z,padSize=3.):
+def InducedChargeSquarePadExactVectorized(Q,x,y,z,padSize=3.,padGap=None):
     
     padDiagonalSize = padSize # mm
+    if(padGap != None):
+        padDiagonalSize = padDiagonalSize - np.sqrt(2)*padGap
     padEdgeSize = padDiagonalSize/np.sqrt(2.)
     
     induced_charge = Q /(2.*np.pi) * ( \
@@ -87,7 +102,7 @@ def InducedChargeSquarePadExactVectorized(Q,x,y,z,padSize=3.):
 
         
 ######################################################################################\
-def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16):
+def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16,padGap=None):
     # Strip is modeled as a strip along the X axis, with half the strip above 0 and 
     # half below
     totalInducedCharge = 0.
@@ -105,14 +120,14 @@ def InducedChargeNEXOStrip(Q,x,y,z,padSize=6.,numPads=16):
         
         
         totalInducedCharge += InducedChargeSquarePadExact(Q,relativeX,relativeY,z,\
-                                                     padSize)
+                                                     padSize,padGap)
         
     return totalInducedCharge
 
 
         
 ######################################################################################\
-def InducedChargeNEXOStripVectorized(Q,x,y,z,padSize=6.,numPads=16):
+def InducedChargeNEXOStripVectorized(Q,x,y,z,padSize=6.,numPads=16,padGap=None):
     # Strip is modeled as a strip along the X axis, with half the strip above 0 and 
     # half below
     totalInducedCharge = np.zeros(len(x))
@@ -130,14 +145,14 @@ def InducedChargeNEXOStripVectorized(Q,x,y,z,padSize=6.,numPads=16):
         
         
         totalInducedCharge += InducedChargeSquarePadExactVectorized(Q,relativeX,relativeY,z,\
-                                                     padSize)
+                                                     padSize,padGap)
         
     return totalInducedCharge
         
 
 
 ######################################################################################\    
-def ComputeChargeWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300):
+def ComputeChargeWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300,padGap=None):
     
     driftVelocity = 1.7 # mm/us
     
@@ -146,7 +161,7 @@ def ComputeChargeWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300)
     
     for i in range(numWfmPoints):
         qpoints[i] = InducedChargeNEXOStrip(Q,x,y,zpoints[i],\
-                                            padSize,numPads)
+                                            padSize,numPads,padGap)
         
         
     driftpoints = zpoints/driftVelocity
@@ -154,7 +169,7 @@ def ComputeChargeWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300)
     return driftpoints,np.flip(qpoints)
 
 ######################################################################################\    
-def ComputeChargeWaveformOnStripWithIons(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300):
+def ComputeChargeWaveformOnStripWithIons(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300,padGap=None):
     
     driftVelocity = 1.7 # mm/us
     
@@ -163,9 +178,9 @@ def ComputeChargeWaveformOnStripWithIons(Q,x,y,z,padSize=6.,numPads=16,numWfmPoi
     
     for i in range(numWfmPoints):
         qpoints[i] = InducedChargeNEXOStrip(Q,x,y,zpoints[i],\
-                                            padSize,numPads) + \
+                                            padSize,numPads,padGap) + \
                      InducedChargeNEXOStrip(-Q,x,y,zpoints[-1],\
-                                            padSize,numPads)  
+                                            padSize,numPads,padGap)  
         
         
     driftpoints = zpoints/driftVelocity
@@ -173,7 +188,7 @@ def ComputeChargeWaveformOnStripWithIons(Q,x,y,z,padSize=6.,numPads=16,numWfmPoi
     return driftpoints,np.flip(qpoints)
 
 ######################################################################################\    
-def ComputeCurrentWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300):
+def ComputeCurrentWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300,padGap=None):
     
     driftVelocity = 1.7 # mm/us
     
@@ -184,9 +199,9 @@ def ComputeCurrentWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300
     
     for i in range(numWfmPoints):
         qpointlo = InducedChargeNEXOStrip(Q,x,y,zpoints[i],\
-                                            padSize,numPads)
+                                            padSize,numPads,padGap)
         qpointhi = InducedChargeNEXOStrip(Q,x,y,zpoints[i]+zstep/10.,\
-                                            padSize,numPads)
+                                            padSize,numPads,padGap)
         ipoints[i] = (qpointlo-qpointhi)/(zstep/10./driftVelocity)
         
     driftpoints = zpoints/driftVelocity
@@ -194,14 +209,20 @@ def ComputeCurrentWaveformOnStrip(Q,x,y,z,padSize=6.,numPads=16,numWfmPoints=300
     return driftpoints,np.flip(ipoints)
    
 ######################################################################################
-def DrawStrip( padSize=6., numPads=16 ):
+def DrawStrip( padSize=6., numPads=16, padGap=None ):
     xstart = -(numPads*padSize)/2.
     
+    padDiagonalSize = padSize # mm
+    if(padGap != None):
+        padDiagonalSize = padDiagonalSize - np.sqrt(2)*padGap
+    padHl = padDiagonalSize/2.0 #pad half length along diagonal, short variable for ease of reading
+
     rectangles = []
     
+
     for i in range(numPads):
-        rectangles.append( plt.Rectangle( (xstart+padSize*i + padSize/2., -padSize/2.), \
-                                         padSize/np.sqrt(2), padSize/np.sqrt(2), \
+        rectangles.append( plt.Rectangle( (xstart+padSize*i + padHl, -padHl), \
+                                         padDiagonalSize/np.sqrt(2), padDiagonalSize/np.sqrt(2), \
                                   fc=(0.,0.,0.,0.2),ec=(0.,0.,0.,1.),angle=45. ) )
         plt.gca().add_patch(rectangles[i])
     
