@@ -68,6 +68,7 @@ def InducedChargeSquarePadExact(Q,x,y,z,padSize=3.,padGap=None):
     if z > 0.:
         return induced_charge
     if z == 0.:
+        #if the charge lands on the pad, charge Q is collected
         if (x>-padEdgeSize/2.)&(x<padEdgeSize/2.)&(y>-padEdgeSize/2.)&(y<padEdgeSize/2.):
             return Q
         else:
